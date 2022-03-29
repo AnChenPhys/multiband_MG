@@ -287,7 +287,7 @@ def delta_EFT(fo,c0,z, fstar):
     return np.array(delta)
 
 # phase for exact Delta
-def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, tc, psic, cosmo, cT_type='EFT', width=0, ):
+def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo, tc, psic, cT_type='EFT', width=0):
 
     Q_1 = - (743./336 + 11./4*eta)*eta**(-2./5)
     Q_1p5 = (4*np.pi-0) *eta**(-3./5)
@@ -321,10 +321,12 @@ def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, tc, psic, cosmo, cT_type='EFT',
 
     Psi_int = 2*np.pi * t_o
 
+    print(type(cosmo), type(tc), type(fo), type(fstar), type(psic))
+
     cT_step_fo = cT_step(fo, fstar, c0, width)            #TB
-    dist =  dcom(zem, fo[1], cosmo)                        # TB simplification -- this should really be a function
+    dist =  dcom(zem, fo, cosmo)                        # TB 
                         
-    print(dist)
+    print('dist', len(dist))
 
     for i in range(len(fo)):
         #Psi[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*tc - psic
@@ -363,10 +365,12 @@ class waveform_delta(object):
         tc          = pars[3]
         psic       = pars[4]
         c0h = pars[5]
-        fstar = pars[6]
+        fstarh = pars[6]
 
-        amp = amp_Delta_exact(fo, fstar, c0h, Mz, eta, zem, cosmo_params, self.cT_type, self.width)
-        Psi = Psi_Delta_exact(fo, fstar, c0h, Mz, eta, zem, cosmo_params, tc, psic, self.cT_type, self.width)
+        print(type(cosmo_params), type(tc), type(fo), type(fstarh), type(psic))
+
+        amp = amp_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, self.cT_type, self.width)
+        Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, tc, psic, self.cT_type, self.width)
 
         return amp * np.exp(1.j*Psi)
 
