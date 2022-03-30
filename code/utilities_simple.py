@@ -315,6 +315,7 @@ def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo, tc, psic, cT_type='EFT',
 
     t_o = np.zeros(len(fo))
     Psi = np.zeros(len(fo))
+    Psi_old = np.zeros(len(fo))
 
     for i in range(len(fo)):
         t_o[i] = integrate.simps(-to_int[i:], x=fo[i:])
@@ -325,10 +326,10 @@ def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo, tc, psic, cT_type='EFT',
 
         cT_step_val = cT_step(fo[i], fstar, c0, width)            #TB
         dist_val =  dcom(zem, fo[i], cosmo)                        # TB 
-        #Psi[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*tc - psic
+        Psi_old[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*tc - psic
         Psi[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*(tc + dist_val/cT_step_val) - psic
 
-    return Psi
+    return [Psi, Psi_old]
 
 # amplitude for exact Delta
 def amp_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo_params, cT_type='EFT', width=0):
@@ -353,7 +354,7 @@ class waveform_delta(object):
         self.cT_type = cT_type
         self.width = width
 
-    def h_Delta_exact(self, fo, pars, cosmo_params):
+    def h_Delta_exact(self, fo, pars, cosmo_params, dist_corr=True):
 
         Mz          = np.exp(pars[0]) * Msolar * GN/ (1e3 *c)**3
         eta         = np.exp(pars[1])
@@ -364,9 +365,14 @@ class waveform_delta(object):
         fstarh = pars[6]
 
         amp = amp_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, self.cT_type, self.width)
-        Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, tc, psic, self.cT_type, self.width)
 
+        if dist_corr==True:
+            Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, tc, psic, self.cT_type, self.width)[0]
+        else:
+            Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, tc, psic, self.cT_type, self.width)[1]
+    
         return amp * np.exp(1.j*Psi)
+
 
 def smoothstep(x, x_min=0, x_max=1, N=1):
     x = np.clip((x - x_min) / (x_max - x_min), 0, 1)
@@ -378,6 +384,7 @@ def smoothstep(x, x_min=0, x_max=1, N=1):
     result *= x ** (N + 1)
 
     return result
+
 
 def cT_step(farr, fstar, c0, width):
 
