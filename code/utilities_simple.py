@@ -323,11 +323,11 @@ def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo, tc, psic, cT_type='EFT',
     Psi_int = 2*np.pi * t_o
 
     for i in range(len(fo)):
-
-        cT_step_val = cT_step(fo[i], fstar, c0, width)            #TB
-        dist_val =  dcom(zem, fo[i], cosmo)                        # TB 
+    
+        dist_val =  dcom(zem, fo[i], cosmo)                        # TB Does this need to be in MG?
         Psi_old[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*tc - psic
-        Psi[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*(tc + dist_val/cT_step_val) - psic
+        Psi[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*(tc + Mpc *dist_val/c*(1-c0)*(1-fstar/fo[i])*np.heaviside(fstar-fo[i],1)) - psic
+
 
     return [Psi, Psi_old]
 
