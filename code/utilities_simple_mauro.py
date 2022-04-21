@@ -392,16 +392,16 @@ class waveform_delta(object):
         amp     = amp_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, 
                     self.cT_type, self.width)
 
-        #if dist_corr==True:
-        #    Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, 
-        #            tc, psic, self.cT_type, self.width)[0]
-        #else:
-        #    Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, 
-        #            tc, psic, self.cT_type, self.width)[1]
+        if dist_corr==True:
+           Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, 
+                   tc, psic, self.cT_type, self.width)[0]
+        else:
+           Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, 
+                   tc, psic, self.cT_type, self.width)[1]
 
         ### Mauro: tested that with this everything works, probably the part 
         ### I commented above has something strange???
-        Psi = Psi_GR(fo, Mz, eta, zem, tc, psic)
+        # Psi = Psi_GR(fo, Mz, eta, zem, tc, psic)
     
         return amp * np.exp(1.j*Psi)
 
