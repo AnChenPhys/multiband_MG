@@ -202,7 +202,7 @@ def Psi_GR(fo, Mz, eta, zem, tc, psic):
     return Psi
 
 # Now the input mass is redshifted
-def waveform(freq, pars, cosmo_params):
+def waveform(freq, pars, cosmo_params, dist_corr=False):
 
     Mc      = np.exp(pars[0]) * Msolar * GN/ (1e3 *c)**3
     eta     = np.exp(pars[1])
