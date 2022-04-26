@@ -294,13 +294,17 @@ def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo, tc, psic, cT_type='EFT',
     Q_2 = (34103./18144 + 13661./2016*eta + 59./18*eta**2) *eta**(-4./5)
     Q_2p5 = -np.pi/eta*(4159./672+189./8*eta)
 
-    if cT_type=='EFT':
+    if cT_type=='GR':
+        Delta = 0
+        d_Delta_dfo = 0
+    elif cT_type=='EFT':
         Delta = delta_EFT(fo,c0,zem,fstar)
         d_Delta_dfo_func = lambda fo_func: delta_EFT(fo_func, c0, zem, fstar)
- 
+        d_Delta_dfo = derivative(d_Delta_dfo_func, fo, fo*1e-3)
     elif cT_type=='step':
         Delta = Delta_step(fo,c0,zem,fstar,width)
         d_Delta_dfo_func = lambda fo_func: Delta_step(fo_func, c0, zem, fstar, width)
+        d_Delta_dfo = derivative(d_Delta_dfo_func, fo, fo*1e-3)
     else:
         Delta = 0.
         print('No Delta setting detected in Psi_Delta_exact.')
@@ -308,8 +312,6 @@ def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo, tc, psic, cT_type='EFT',
     Mo_arr = Mz / (1-Delta)
 
     uo_arr = np.pi * Mo_arr * fo
-
-    d_Delta_dfo = derivative(d_Delta_dfo_func, fo, fo*1e-3)
 
     to_int = 5*np.pi*(Mz)**2/96 / (1-Delta)**2 * (1 + fo/(1-Delta)*d_Delta_dfo) * uo_arr**(-11./3) * (1 - Q_1*uo_arr**(2./3) - Q_1p5*uo_arr + (Q_1**2-Q_2)*uo_arr**(4./3) + (2*Q_1*Q_1p5-Q_2p5)*uo_arr**(5./3))
 
@@ -324,17 +326,26 @@ def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo, tc, psic, cT_type='EFT',
 
     for i in range(len(fo)):
     
-        dist_val =  dcom(zem, fo[i], cosmo)                        # TB Does this need to be in MG?
-        Psi_old[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*tc - psic
-        Psi[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*(tc + Mpc *dist_val/c*(1-c0)*(1-fstar/fo[i])*np.heaviside(fstar-fo[i],1)) - psic
+        # dist_val =  dcom(zem, fo[i], cosmo)                        # TB Does this need to be in MG?
+        Psi[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*tc - psic
+        # Psi[i] = integrate.simps(-Psi_int[i:], x=fo[i:]) - np.pi/4 + 2*np.pi*fo[i]*(tc + Mpc *dist_val/c*(1-c0)*(1-fstar/fo[i])*np.heaviside(fstar-fo[i],1)) - psic
 
+    return Psi
 
-    return [Psi, Psi_old]
+# distance correlation term in the phase
+def Psi_dist_corr(fo, fstar, c0, zem, cosmo_params):
+
+    dist_val =  dcom(zem, fo, cosmo_params)
+
+    return 2*np.pi*fo * Mpc *dist_val/c*(1-c0)*(1-fstar/fo)*np.heaviside(fstar-fo,1)
 
 # amplitude for exact Delta
 def amp_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo_params, cT_type='EFT', width=0):
 
-    if cT_type=='EFT':
+    if cT_type=='GR':
+        Delta = 0
+        cT_fo = 1
+    elif cT_type=='EFT':
         Delta = delta_EFT(fo,c0,zem, fstar)
         cT_fo = cT_EFT(fo, fstar, c0)
     elif cT_type=='step':
@@ -367,9 +378,9 @@ class waveform_delta(object):
         amp = amp_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, self.cT_type, self.width)
 
         if dist_corr==True:
-            Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, tc, psic, self.cT_type, self.width)[0]
+            Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, tc, psic, self.cT_type, self.width) + Psi_dist_corr(fo, fstarh, c0h, zem, cosmo_params)
         else:
-            Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, tc, psic, self.cT_type, self.width)[1]
+            Psi = Psi_Delta_exact(fo, fstarh, c0h, Mz, eta, zem, cosmo_params, tc, psic, self.cT_type, self.width)
     
         return amp * np.exp(1.j*Psi)
 
