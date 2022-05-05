@@ -317,7 +317,6 @@ def Psi_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo, tc, psic, cT_type='EFT',
 
     t_o = np.zeros(len(fo))
     Psi = np.zeros(len(fo))
-    Psi_old = np.zeros(len(fo))
 
     for i in range(len(fo)):
         t_o[i] = integrate.simps(-to_int[i:], x=fo[i:])
