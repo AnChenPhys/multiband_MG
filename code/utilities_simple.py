@@ -342,6 +342,16 @@ def Psi_dist_corr(fo, fstar, c0, zem, cosmo_params):
 
     return result
 
+def Psi_dist_corr_eff(fo, c0, zem, cosmo_params):
+
+    result = np.zeros(len(fo))
+    for i in range(len(fo)):
+        dist_val =  dcom(zem, fo[i], cosmo_params)
+
+        result[i] = 2*np.pi*fo[i] * Mpc *dist_val/c*(1-c0)
+
+    return result
+
 # amplitude for exact Delta
 def amp_Delta_exact(fo, fstar, c0, Mz, eta, zem, cosmo_params, cT_type='EFT', width=0):
 
