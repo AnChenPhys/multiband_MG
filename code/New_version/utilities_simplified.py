@@ -140,34 +140,68 @@ def get_ddL_Mpc_dz(z, cosmo_params=cosmo_params):
 #-------------------------------------------------------------------------------
 
 # ------- Start with all cT functions 
-def cT_step(f, f0=1., c0=1): 
-    return (1 -c0) *np.heaviside(f -f0, 1.) +c0
+def cT_step(f, f0=1., dc0=0.): 
+    return dc0 *np.heaviside(f -f0, 1.) +1 -dc0
 
 
-def get_cT(f, f0=1, c0=1, cT_type='GR'):
+def get_cT(f, f0=1, dc0=0, cT_type='GR'):
     if cT_type=='GR':
         cT  = f**0
 
     elif cT_type=='step':
-        cT  = cT_step(f, f0=f0, c0=c0)
+        cT  = cT_step(f, f0=f0, dc0=dc0)
 
     return cT
 
+
+def dcT_step(f, f0=1., dc0=0.): 
+    return dc0 *(1 - np.heaviside(f -f0, 1.) )
+
+
+def get_dcT(f, f0=1, dc0=0., cT_type='GR'):
+    if cT_type=='GR':
+        cT  = 0 *f
+
+    elif cT_type=='step':
+        cT  = dcT_step(f, f0=f0, dc0=dc0)
+
+    return cT
+
+
 # ------- Then all d cT / dc0 functions 
-def dcT_step_dc0(f, f0=1., c0=1):
+def dcT_step_ddc0(f, f0=1., dc0=0.):
     """
-    Second derivative of cT_step wrt c0
+    Second derivative of cT_step wrt dc0
     """ 
 
-    return 1 -np.heaviside(f -f0, 1.)
+    return np.heaviside(f -f0, 1.) -1
 
 
-def get_dcT_dc0(f, f0=1, c0=1, cT_type='GR'):
+def get_dcT_ddc0(f, f0=1, dc0=0., cT_type='GR'):
     if cT_type=='GR':
         dcT_dc0 = 0 *f
 
     elif cT_type=='step':
-        dcT_dc0 = dcT_step_dc0(f, f0=f0, c0=c0)
+        dcT_dc0 = dcT_step_ddc0(f, f0=f0, dc0=dc0)
+
+    return dcT_dc0
+
+
+# ------- Then all d dcT / dc0 functions 
+def ddcT_step_ddc0(f, f0=1., dc0=0.):
+    """
+    Second derivative of cT_step wrt dc0
+    """ 
+
+    return 1 - np.heaviside(f -f0, 1.) 
+
+
+def get_ddcT_ddc0(f, f0=1, dc0=0., cT_type='GR'):
+    if cT_type=='GR':
+        dcT_dc0 = 0 *f
+
+    elif cT_type=='step':
+        dcT_dc0 = ddcT_step_ddc0(f, f0=f0, dc0=dc0)
 
     return dcT_dc0
 
@@ -202,8 +236,8 @@ def get_Psis(eta):
     return Q_1, Q_1p5, Q_2, Q_2p5
 
 
-def Psi_Delta_inspiral(fo, Mo, eta, tc, psic, f0=1, c0=1, 
-        cosmo_params=cosmo_params, cT_type='GR'):
+def Psi_Delta_inspiral(fo, Mo, eta, tc, psic, cosmo_params=cosmo_params, 
+        cT_type='GR'):
     """
     Function to compute the phase for the GW inspiral, 3.15 of 2203.00566
     """
@@ -236,58 +270,52 @@ def Psi_Delta_inspiral(fo, Mo, eta, tc, psic, f0=1, c0=1,
     return Psi +2 *np.pi *fo *tc -np.pi /4 -psic
 
 
-def dPsi_Delta_inspiral_dc0(fo, Mo, eta, tc, psic, f0=1, c0=1, 
-        cosmo_params=cosmo_params, cT_type='GR'):
-    """
-    Function to compute the derivative of the phase for the GW inspiral wrt c0
-    """
-
-    return 0. *fo
-
-
-def Psi_MG_dist(fo, z, f0=1., c0=1., cT_type='GR', 
+def Psi_MG_dist(fo, z, f0=1., dc0=0., cT_type='GR', 
         cosmo_params=cosmo_params):
     """
     Old distance correlation term in the phase
     """
 
-    cT      = get_cT(fo, f0=f0, c0=c0, cT_type=cT_type)
-    dcT     = (1 -cT)
+    cT      = get_cT(fo, f0=f0, dc0=dc0, cT_type=cT_type)
+    dcT     = get_dcT(fo, f0=f0, dc0=dc0, cT_type=cT_type)
         
     dc_Mpc  = get_dc_Mpc(z, cosmo_params=cosmo_params)
 
-    return -2 *np.pi *fo *Mpc *dc_Mpc /c *dcT /(1 -dcT)
+    return -2 *np.pi *fo *Mpc *dc_Mpc /c *dcT /cT
 
 
-def dPsi_MG_dist_dc0(fo, z, f0=1., c0=1., cT_type='GR', 
+def dPsi_MG_dist_ddc0(fo, z, f0=1., dc0=0., cT_type='GR', 
         cosmo_params=cosmo_params):
     """
     Derivative of the distance correlation term in the phase wrt c0
     """
 
-    cT      = get_cT(fo, f0=f0, c0=c0, cT_type=cT_type)
-    dcT     = (1 -cT)
+    cT          = get_cT(fo, f0=f0, dc0=dc0, cT_type=cT_type)
+    dcT         = get_dcT(fo, f0=f0, dc0=dc0, cT_type=cT_type)
     
-    dcT_dc0 = get_dcT_dc0(fo, f0=f0, c0=c0, cT_type=cT_type)
-    dc_Mpc  = get_dc_Mpc(z, cosmo_params=cosmo_params)
-    
-    return -2 *np.pi *fo *Mpc *dc_Mpc /c /(1 -dcT)**2 *dcT_dc0
+    dcT_dc0     = get_dcT_ddc0(fo, f0=f0, dc0=dc0, cT_type=cT_type)
+    ddcT_dc0    = get_ddcT_ddc0(fo, f0=f0, dc0=dc0, cT_type=cT_type)
 
 
-def dPsi_MG_dist_dz(fo, z, f0=1., c0=1., cT_type='GR', 
+    dc_Mpc      = get_dc_Mpc(z, cosmo_params=cosmo_params)
+    
+    return -2 *np.pi *fo *Mpc *dc_Mpc /c *(ddcT_dc0 /cT -dcT/cT**2 *dcT_dc0)
+
+
+def dPsi_MG_dist_dz(fo, z, f0=1., dc0=0., cT_type='GR', 
         cosmo_params=cosmo_params):
     """
-    Derivative of the distance correlation term in the phase wrt c0
+    Derivative of the distance correlation term in the phase wrt dc0
     """
 
-    cT      = get_cT(fo, f0=f0, c0=c0, cT_type=cT_type)
-    dcT     = (1 -cT) 
+    cT      = get_cT(fo, f0=f0, dc0=dc0, cT_type=cT_type)
+    dcT     = get_dcT(fo, f0=f0, dc0=dc0, cT_type=cT_type)
     ddc_Mpc = get_dc_int_Mpc(z, cosmo_params=cosmo_params)
 
-    return -2 *np.pi *fo *Mpc *ddc_Mpc /c *dcT /(1 -dcT)
+    return -2 *np.pi *fo *Mpc *ddc_Mpc /c *dcT /cT
 
 
-def amp_Delta_inspiral(fo, Mo, eta, z, f0=1., c0=1., cT_type='GR', 
+def amp_Delta_inspiral(fo, Mo, eta, z, f0=1., dc0=0., cT_type='GR', 
          cosmo_params=cosmo_params):
     """
     Returns the MG amplitude for inspiraling only
@@ -295,7 +323,7 @@ def amp_Delta_inspiral(fo, Mo, eta, z, f0=1., c0=1., cT_type='GR',
     in GR Mo = Mz
     """
 
-    cT      = get_cT(fo, f0=f0, c0=c0, cT_type=cT_type)
+    cT      = get_cT(fo, f0=f0, dc0=dc0, cT_type=cT_type)
     dL_Mpc  = get_dL_Mpc(z, cosmo_params=cosmo_params)
     dL_MG   = cT *dL_Mpc *Mpc /c
 
@@ -305,29 +333,29 @@ def amp_Delta_inspiral(fo, Mo, eta, z, f0=1., c0=1., cT_type='GR',
     return np.sqrt(5 *np.pi /24) *Mo**2 /dL_MG *us_arr**(-7 /6)   # s
 
 
-def damp_Delta_inspiral_dz(fo, Mo, eta, z, f0=1., c0=1., cT_type='GR',
+def damp_Delta_inspiral_dz(fo, Mo, eta, z, f0=1., dc0=0., cT_type='GR',
          cosmo_params=cosmo_params):
 
-    cT      = get_cT(fo, f0=f0, c0=c0, cT_type=cT_type)
+    cT      = get_cT(fo, f0=f0, dc0=dc0, cT_type=cT_type)
     dL_Mpc  = get_dL_Mpc(z, cosmo_params=cosmo_params)    
     dL_MG   = cT *dL_Mpc *Mpc /c
 
     dL_MGdz = cT *Mpc /c *get_ddL_Mpc_dz(z, cosmo_params=cosmo_params)
 
-    return -amp_Delta_inspiral(fo, Mo, eta, z, f0=f0, c0=c0, cT_type=cT_type, 
+    return -amp_Delta_inspiral(fo, Mo, eta, z, f0=f0, dc0=dc0, cT_type=cT_type, 
             cosmo_params=cosmo_params) /dL_MG *dL_MGdz
 
 
-def damp_Delta_inspiral_dc0(fo, Mo, eta, z, f0=1., c0=1., cT_type='GR',
+def damp_Delta_inspiral_ddc0(fo, Mo, eta, z, f0=1., dc0=0., cT_type='GR',
          cosmo_params=cosmo_params):
 
-    cT      = get_cT(fo, f0=f0, c0=c0, cT_type=cT_type)
+    cT      = get_cT(fo, f0=f0, dc0=dc0, cT_type=cT_type)
     dL_Mpc  = get_dL_Mpc(z, cosmo_params=cosmo_params)    
     dL_MG   = cT *dL_Mpc *Mpc /c
 
-    dL_MGdc = get_dcT_dc0(fo, f0=f0, c0=c0, cT_type=cT_type) *dL_Mpc *Mpc /c
+    dL_MGdc = get_dcT_ddc0(fo, f0=f0, dc0=dc0, cT_type=cT_type) *dL_Mpc *Mpc /c
     
-    return -amp_Delta_inspiral(fo, Mo, eta, z, f0=f0, c0=c0, cT_type=cT_type, 
+    return -amp_Delta_inspiral(fo, Mo, eta, z, f0=f0, dc0=dc0, cT_type=cT_type, 
             cosmo_params=cosmo_params) /dL_MG *dL_MGdc
 
 
@@ -339,18 +367,18 @@ def h_Delta_inspiral(fo, pars, cosmo_params=cosmo_params, cT_type='GR',
     z       = np.exp(pars[2])
     tc      = pars[3]
     psic    = pars[4]
-    c0      = pars[5]
+    dc0     = pars[5]
     f0      = pars[6]
 
 
-    amp = amp_Delta_inspiral(fo, Mo, eta, z, f0=f0, c0=c0, 
+    amp = amp_Delta_inspiral(fo, Mo, eta, z, f0=f0, dc0=dc0, 
             cosmo_params=cosmo_params, cT_type=cT_type)
 
-    Psi = Psi_Delta_inspiral(fo, Mo, eta, tc, psic, f0=f0, c0=c0, 
-            cosmo_params=cosmo_params, cT_type=cT_type) 
+    Psi = Psi_Delta_inspiral(fo, Mo, eta, tc, psic, cosmo_params=cosmo_params, 
+            cT_type=cT_type) 
 
     if cT_type != 'GR' and dist_corr:
-        Psi += Psi_MG_dist(fo, z, f0=f0, c0=c0, cT_type=cT_type, 
+        Psi += Psi_MG_dist(fo, z, f0=f0, dc0=dc0, cT_type=cT_type, 
                 cosmo_params=cosmo_params)
 
     return amp *np.exp(1.j *Psi)
@@ -374,27 +402,27 @@ def Fisher_der(fo, pars, cosmo_params=cosmo_params, cT_type='GR',
     z       = np.exp(pars[2])
     tc      = pars[3]
     psic    = pars[4]
-    c0      = pars[5]
+    dc0     = pars[5]
     f0      = pars[6]
 
-    my_Amp  = amp_Delta_inspiral(fo, Mo, eta, z, f0=f0, c0=c0, 
+    my_Amp  = amp_Delta_inspiral(fo, Mo, eta, z, f0=f0, dc0=dc0, 
                 cosmo_params=cosmo_params, cT_type=cT_type)
 
     # Function to compute numerical derivatives w.r.t. lnM
     lnA_lnMo    = lambda lnMo_func : np.log(amp_Delta_inspiral(fo, 
                     np.exp(lnMo_func) *Msolar *GN/ c**3, eta, z, f0=f0, 
-                    c0=c0, cosmo_params=cosmo_params, cT_type=cT_type))
+                    dc0=dc0, cosmo_params=cosmo_params, cT_type=cT_type))
 
     Psi_lnMo    = lambda lnMo_func : Psi_Delta_inspiral(fo, np.exp(lnMo_func
-                    ) *Msolar *GN/ c**3, eta, tc, psic, f0=f0, c0=c0, 
+                    ) *Msolar *GN/ c**3, eta, tc, psic, 
                     cosmo_params=cosmo_params, cT_type=cT_type)
 
     # Function to compute numerical derivatives w.r.t. lneta
     lnA_lneta   = 0
 
     Psi_lneta   = lambda lneta_func : Psi_Delta_inspiral(fo, Mo, 
-                    np.exp(lneta_func), tc, psic, f0=f0, c0=c0, 
-                    cosmo_params=cosmo_params, cT_type=cT_type)
+                    np.exp(lneta_func), tc, psic, cosmo_params=cosmo_params, 
+                    cT_type=cT_type)
 
     dlnAs   = []
     dPsis   = []
@@ -417,14 +445,14 @@ def Fisher_der(fo, pars, cosmo_params=cosmo_params, cT_type='GR',
 
         elif i == 2:
 
-            dlnA    = damp_Delta_inspiral_dz(fo, Mo, eta, z, f0=f0, c0=c0, 
+            dlnA    = damp_Delta_inspiral_dz(fo, Mo, eta, z, f0=f0, dc0=dc0, 
                         cosmo_params=cosmo_params, cT_type=cT_type
                         ) / my_Amp *z
 
             dPsi    = 0 *fo
 
             if cT_type != 'GR' and dist_corr:
-                dPsi    += dPsi_MG_dist_dz(fo, z, f0=f0, c0=c0, 
+                dPsi    += dPsi_MG_dist_dz(fo, z, f0=f0, dc0=dc0, 
                             cT_type=cT_type, cosmo_params=cosmo_params)
 
         elif i == 3:
@@ -439,15 +467,14 @@ def Fisher_der(fo, pars, cosmo_params=cosmo_params, cT_type='GR',
 
         elif i == 5:
             if cT_type != 'GR':
-                dlnA    = damp_Delta_inspiral_dc0(fo, Mo, eta, z, f0=f0, 
-                            c0=c0, cT_type=cT_type, cosmo_params=cosmo_params
+                dlnA    = damp_Delta_inspiral_ddc0(fo, Mo, eta, z, f0=f0, 
+                            dc0=dc0, cT_type=cT_type, cosmo_params=cosmo_params
                             ) / my_Amp 
 
-                dPsi    = dPsi_Delta_inspiral_dc0(fo, Mo, eta, tc, psic, f0=f0, 
-                            c0=c0, cT_type=cT_type, cosmo_params=cosmo_params)
+                dPsi    = 0 *fo
 
                 if dist_corr:
-                    dPsi    += dPsi_MG_dist_dc0(fo, z, f0=f0, c0=c0, 
+                    dPsi    += dPsi_MG_dist_ddc0(fo, z, f0=f0, dc0=dc0, 
                                 cT_type=cT_type, cosmo_params=cosmo_params)
 
             else:
